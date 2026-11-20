@@ -28,3 +28,14 @@ jobs:
 
       - name: Run tests
         run: python -m pytest tests/ -q
+
+      - name: Run benchmark (pure Python vs NumPy vs Fortran)
+        run: python -m src.benchmark
+
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: |
+            results/benchmark.csv
+            results/benchmark.png
