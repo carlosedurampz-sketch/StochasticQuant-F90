@@ -160,16 +160,15 @@ Every check below is automated (`pytest`, plus assertion gates inside `run_simul
 
 ## Benchmark
 
-`python -m src.benchmark` times GBM terminal simulation (20k and 100k paths, median of 3 runs) for pure Python loops, NumPy vectorisation, and the Fortran core (or its labelled fallback). Median wall time, GBM terminal simulation:
+`python -m src.benchmark` times GBM terminal simulation (20k and 100k paths, median of 3 runs) for pure Python loops, NumPy vectorisation, and the Fortran core. Measured in GitHub Actions (CI run #5, `ubuntu-latest`, Python 3.11, 20 Nov 2026), median wall time:
 
 | Engine | 20,000 paths | 100,000 paths |
 |---|---|---|
-| Pure Python | 0.0111 s | 0.0788 s |
-| NumPy | 0.00047 s | 0.0054 s |
-| Fortran (f2py) | [PENDING: compile & measure] | [PENDING: compile & measure] |
-| Fortran-API fallback (NumPy) | 0.00053 s | 0.0038 s |
+| Pure Python | 0.0093 s | 0.0443 s |
+| NumPy | 0.0002 s | 0.0011 s |
+| Fortran (f2py) | 0.0010 s | 0.0048 s |
 
-NumPy is **14.7× faster than pure Python** at 100k paths. The fallback *is* NumPy underneath, so it matching NumPy is exactly what should happen, and the chart labels it honestly instead of pretending it is compiled Fortran. To fill in the Fortran row, run `make fortran && python -m src.benchmark` on a machine with `gfortran`; the expected pattern is that Fortran pulls ahead mainly on the loop-heavy Vasicek/Merton kernels, while for the vectorisable GBM kernel NumPy is already near the limit — that asymmetry is itself the lesson. See `results/benchmark.csv`.
+NumPy is **40× faster than pure Python** at 100k paths. Fortran is **9.2× faster than pure Python** but ~4× slower than NumPy here — and the comparison is not like-for-like: the Fortran engine simulates the full 252-step path for every trajectory, while NumPy and pure Python compute only the terminal value in one closed-form step. Per simulated step, Fortran is far ahead; NumPy wins the terminal-value shortcut because it is already near the vectorised limit. That asymmetry is itself the lesson: Fortran pulls ahead on the loop-heavy Vasicek/Merton kernels, while for the vectorisable GBM kernel NumPy is already near the limit. The benchmark runs in CI on every push (see `.github/workflows/ci.yml`), so these numbers are re-measured, not one-off. See `results/benchmark.csv`.
 
 ![Benchmark: pure Python vs NumPy vs Fortran](docs/images/benchmark.png)
 
