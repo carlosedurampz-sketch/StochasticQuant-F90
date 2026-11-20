@@ -65,7 +65,9 @@ def simulate_gbm_fortran(
         terminal[:half] = 0.5 * (up + dn)
         terminal[half:2 * half] = terminal[:half]
         if n_paths % 2:
-            terminal[-1] = s0 * np.exp((mu - 0.5 * sigma**2) * t + sigma * np.sqrt(t) * z[-1])
+            terminal[-1] = s0 * np.exp(
+                (mu - 0.5 * sigma**2) * t + sigma * np.sqrt(t) * z[-1]
+            )
     else:
         terminal = s0 * np.exp((mu - 0.5 * sigma**2) * t + sigma * np.sqrt(t) * z)
     return terminal, float(terminal.mean()), float(terminal.std(ddof=1))
@@ -117,7 +119,9 @@ def gbm_call_control_variate(
     return float(payoff.mean()), float(payoff.mean() - beta * (st.mean() - e_st)), bs
 
 
-def portfolio_var_cvar_fortran(losses: np.ndarray, alpha: float = 0.99) -> tuple[float, float]:
+def portfolio_var_cvar_fortran(
+    losses: np.ndarray, alpha: float = 0.99,
+) -> tuple[float, float]:
     if FORTRAN_AVAILABLE:
         var, cvar = _f90.montecarlo.portfolio_var_cvar(
             np.asarray(losses, dtype=float), alpha
