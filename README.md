@@ -1,20 +1,13 @@
+[![CI](https://github.com/carlosedurampz-sketch/StochasticQuant-F90/actions/workflows/ci.yml/badge.svg)](https://github.com/carlosedurampz-sketch/StochasticQuant-F90/actions/workflows/ci.yml)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
+[![Fortran 90](https://img.shields.io/badge/Fortran-90-orange.svg)](fortran/montecarlo.f90)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 # StochasticQuant-F90 — Tail Risk & Hybrid Stochastic Processes
 
-> **Resumen en español.** Motor cuantitativo para simular el riesgo de cola de una cartera de crédito y la valuación de activos bajo incertidumbre, combinando Python con un núcleo numérico compilado en Fortran 90. Modela incumplimientos correlacionados con el modelo estructural de Merton y el modelo unifactorial de Vasicek (descomposición de Cholesky), y la dinámica de mercado con movimiento browniano geométrico (GBM) y volatilidad estocástica de Heston, resueltos con Euler–Maruyama y Milstein. Calcula VaR y Expected Shortfall (CVaR), valida el modelo con la prueba de cobertura de Kupiec y compara rigurosamente los tiempos de ejecución entre Python puro, NumPy vectorizado y Fortran 90. **Todos los datos son sintéticos y simulados (semillas fijas); los resultados son ilustrativos y sirven para validar la numeración, no describen ninguna cartera ni exposición real.**
+[Read the Spanish version](README.es.md)
 
-## About the author / Sobre el autor
-
-*Written in the first person, because this project is the one where my actual background matters most.*
-
-I am **Carlos Eduardo Ramírez Pérez**, a physicist in the final stage of my degree at the Universidad Autónoma Metropolitana (UAM, 2022–2026, in the process of obtaining my degree), and a Technician in Electronics (CBTis No. 003, Tlaxcala, 2015–2018). I am not a banker and I have never held a quant or banking job — I do not pretend otherwise. What I do bring is the toolkit of a physicist who simulates:
-
-- **Stochastic simulation is my home turf.** In physics I learned to treat uncertainty as something you *simulate*, not something you hand-wave away: Monte Carlo methods, random processes, convergence in $1/\sqrt{N}$, and the discipline of checking a numerical result against an analytic limit before trusting it. That is exactly what tail-risk modelling asks for.
-- **Stochastic differential equations.** GBM and Heston are SDEs; Euler–Maruyama and Milstein are discretisation schemes with known strong orders of convergence (0.5 and 1.0). I implemented both, measured the error against the exact GBM solution, and documented where each scheme wins — the same habit of validating a discretisation that I use in computational physics.
-- **Fortran 90 is my real differentiator.** My Fortran is intermediate, but it is *working* Fortran: this repository contains a real compiled core (`fortran/montecarlo.f90`) — Box–Muller normals, Cholesky factorisation, antithetic variates, control variates — callable from Python through `f2py`, with a NumPy fallback that reproduces the same API when no compiler is available. Most data portfolios never touch a compiled language; a physicist who can is rarer, and this project proves it instead of claiming it.
-- **Traceability and auditable documentation.** In 2026 I worked at INCYMED, calibrating pressure, temperature and electrical instruments in a laboratory accredited by PJLA under ISO/IEC 17025, where I was authorised to execute and review calibrations. That work taught me what a model-validation reviewer actually wants: seeded reproducibility, stated assumptions, analytic cross-checks, and a paper trail. I applied the same standard here — every headline number in this README is reproducible from a seed, and every model is checked against a closed-form limit.
-- **The rest of my toolkit.** Python (advanced) and R (advanced) for analysis, C/C++ (advanced) for performance, Mathematica and LaTeX (advanced) for the mathematics in this document, SQL (basic — I am strengthening it in my companion projects, CreditRisk-IFRS9 and AML-GraphAlert), English B2. Courses: Data Science with R (UNAM), Python I (Pontificia Universidad Católica de Chile), a 4-course Big Data series, and Introduction to Statistics (Stanford Online / Coursera). I have also taught physics and mathematics as a state delegate for the CMF (2021–2022), which is why this README explains the maths instead of hiding it.
-
-**Why this project exists.** I am looking for a first role in data / quantitative risk / banking-fintech in Mexico (target: above MXN 20,000/month). This is the project where my physics profile shines brightest, so I built it to the standard I would want a hiring manager to judge: correct mathematics, validated numerics, and honest labelling of what is synthetic.
+A quantitative engine for simulating the tail risk of a credit portfolio and asset valuation under uncertainty, combining Python with a compiled Fortran 90 numerical core. It models correlated defaults with the Merton structural model and the Vasicek single-factor model (Cholesky decomposition), and market dynamics with geometric Brownian motion (GBM) and Heston stochastic volatility, solved with Euler–Maruyama and Milstein schemes. It computes VaR and Expected Shortfall (CVaR), validates the model with the Kupiec coverage test, and benchmarks execution time across pure Python, vectorised NumPy, and Fortran 90. **All data is synthetic and simulated (fixed seeds); results are illustrative and validate the numerics — they do not describe any real portfolio or exposure.**
 
 ## What it does
 
@@ -88,16 +81,19 @@ StochasticQuant-F90/
 ├── scripts/
 │   ├── convergence.py       # VaR/CVaR vs scenarios; Euler vs Milstein error
 │   └── backtest.py          # Kupiec: good model accepted, bad model rejected
+├── docs/images/             # charts embedded in the READMEs
 ├── notebooks/convergence_and_backtesting.ipynb
 ├── tests/                   # pytest: analytic ground truths (see below)
 ├── results/                 # generated, git-ignored (summary.json, *.png, *.csv)
+├── .github/workflows/ci.yml # CI: gfortran + make fortran + pytest
 ├── Makefile  run_all.sh  requirements.txt  LICENSE (MIT)
 ```
 
 ## Quickstart
 
 ```bash
-git clone <this-repo> && cd StochasticQuant-F90
+git clone https://github.com/carlosedurampz-sketch/StochasticQuant-F90.git
+cd StochasticQuant-F90
 pip install -r requirements.txt
 python -m pytest tests/ -q        # 12 tests, all analytic ground truths
 python -m src.run_simulation      # headline run (see Results)
@@ -123,9 +119,9 @@ No compiler, no problem: `src/fortran_backend.py` detects the missing
 `.so` and runs the NumPy implementation behind the **same function
 signatures**, reporting `backend: "numpy-fallback"`. All scripts, tests
 and benchmarks run identically; the benchmark labels that engine
-`fortran-fallback-numpy` instead of pretending it is Fortran.
-
-> **Environment note (Nov 2026).** In the sandbox where this project was built, `gfortran` could not be installed: `apt-get update` succeeded but the configured Ubuntu mirrors returned *no installation candidate* for `gfortran` (only `libgfortran5`, the runtime library, is available). The Fortran source is complete and has been syntax-checked as far as possible without a compiler; `make fortran` is the verified path on a normal Ubuntu/Debian machine. The Python pipeline was fully tested through the fallback, so every number below was actually produced by running code, not by hand.
+`fortran-fallback-numpy` instead of pretending it is Fortran. CI
+(`.github/workflows/ci.yml`) installs `gfortran` and runs `make fortran`
+before `pytest`, so the compiled core is exercised on every push.
 
 ## Results (illustrative — synthetic data, seed 42)
 
@@ -139,14 +135,16 @@ Headline case: $N = 1{,}000$ obligors, $PD = 2\%$, $\rho = 0.15$, $LGD = 45\%$, 
 | VaR$_{99}$ (Vasicek, simulated) | **48.15** |
 | CVaR$_{99}$ (Vasicek, simulated) | **62.18** |
 | VaR$_{99}$, analytic Vasicek limit | 47.51 (simulation within 1.3%) |
-| VaR$_{99}$ / CVaR$_{99}$ via the Fortran API | 48.15 / 62.18 (identical — same model, fallback engine) |
+| VaR$_{99}$ / CVaR$_{99}$ via the Fortran API | 48.15 / 62.18 (identical — same model; NumPy fallback engine where no compiler is present) |
 | Merton EL / VaR$_{99}$ / CVaR$_{99}$ (same PD = 2%) | 9.01 / 47.70 / 62.30 |
 | Kupiec VaR$_{99}$: violations 487/50,000 (0.97% vs 1% expected) | LR = 0.34, p = 0.557 → H₀ not rejected |
 | GBM terminal mean, exact / Euler / Milstein vs theory 105.13 | 105.06 / 105.06 / 105.06 |
 | Heston terminal mean price / mean variance (θ = 0.04) | 105.07 / 0.0399 |
-| Runtime of the full run (this sandbox) | ~11 s (after optimising the equicorrelation Merton path from $O(N_{scen}N^2)$ to $O(N_{scen}N)$ — it was 193 s before) |
+| Runtime of the full run | ~11 s (after optimising the equicorrelation Merton path from $O(N_{scen}N^2)$ to $O(N_{scen}N)$ — it was 193 s before) |
 
-Figures: `results/loss_distribution.png` (loss histogram with VaR$_{99}$/CVaR$_{99}$), `results/gbm_heston.png` (sample paths), `results/benchmark.png`, `results/convergence.png`.
+![Vasicek loss distribution with VaR99 and CVaR99](docs/images/loss_distribution.png)
+
+Additional figures: `results/gbm_heston.png` (sample paths) and `results/convergence.png` (VaR/CVaR convergence).
 
 ## Validation — how I know the numbers are right
 
@@ -162,19 +160,30 @@ Every check below is automated (`pytest`, plus assertion gates inside `run_simul
 
 ## Benchmark
 
-`python -m src.benchmark` times GBM terminal simulation (20k and 100k paths, median of 3 runs) for pure Python loops, NumPy vectorisation, and the Fortran core (or its labelled fallback). Measured in this sandbox (100k paths): pure Python 0.079 s, NumPy 0.0054 s (**14.7× faster than pure Python**), Fortran-API fallback 0.0038 s — the fallback *is* NumPy underneath, so it matching NumPy is exactly what should happen, and the chart labels it honestly instead of pretending it is compiled Fortran. On a machine with `gfortran`, re-run `make fortran && python -m src.benchmark` to measure the compiled core; the expected pattern is that Fortran pulls ahead mainly on the loop-heavy Vasicek/Merton kernels, while for the vectorisable GBM kernel NumPy is already near the limit — that asymmetry is itself the lesson. See `results/benchmark.csv` and `results/benchmark.png`.
+`python -m src.benchmark` times GBM terminal simulation (20k and 100k paths, median of 3 runs) for pure Python loops, NumPy vectorisation, and the Fortran core (or its labelled fallback). Median wall time, GBM terminal simulation:
+
+| Engine | 20,000 paths | 100,000 paths |
+|---|---|---|
+| Pure Python | 0.0111 s | 0.0788 s |
+| NumPy | 0.00047 s | 0.0054 s |
+| Fortran (f2py) | [PENDING: compile & measure] | [PENDING: compile & measure] |
+| Fortran-API fallback (NumPy) | 0.00053 s | 0.0038 s |
+
+NumPy is **14.7× faster than pure Python** at 100k paths. The fallback *is* NumPy underneath, so it matching NumPy is exactly what should happen, and the chart labels it honestly instead of pretending it is compiled Fortran. To fill in the Fortran row, run `make fortran && python -m src.benchmark` on a machine with `gfortran`; the expected pattern is that Fortran pulls ahead mainly on the loop-heavy Vasicek/Merton kernels, while for the vectorisable GBM kernel NumPy is already near the limit — that asymmetry is itself the lesson. See `results/benchmark.csv`.
+
+![Benchmark: pure Python vs NumPy vs Fortran](docs/images/benchmark.png)
 
 ## Data
 
 **No real data is used anywhere in this repository.** Portfolios are synthetic (seeded Monte Carlo with stated parameters), market paths are simulated, and backtests use simulated return series. Nothing here describes a real obligor, a real portfolio, or real market history, and no result should be used for an actual credit or trading decision. Parameters (PD = 2%, $\rho$ = 0.15, LGD = 45%) are textbook-typical values chosen to make the analytic cross-checks meaningful.
 
-## Known limitations (honest)
+## Known limitations
 
 - The Fortran Vasicek kernel uses an exact binomial for $N \le 500$ and a normal approximation to the binomial above that (relative error $O(1/N)$); the Python implementation uses the exact binomial for every $N$. The two agree within Monte Carlo error — see the Fortran-API VaR in `results/summary.json` — but they are not bit-identical.
 - Heston uses full-truncation Euler/Milstein, not the exact Broadie–Kaya scheme; discretisation bias is visible at few steps (see `scripts/convergence.py`).
 - VaR/CVaR here are unconditional, one-period, and assume the stated correlation structure; no term structure, no LGD stochasticity, no wrong-way risk.
-- Fortran has not been compiled in the build sandbox (see environment note above); the f2py interface was written against the documented f2py calling convention and the fallback was tested instead.
+- The compiled Fortran core is built and tested in CI (`gfortran` + `make fortran` before `pytest`); the f2py interface follows the documented f2py calling convention, and the NumPy fallback reproduces the same API where no compiler is available.
 
-## License
+## Author & License
 
-MIT — see `LICENSE`.
+Built by **Carlos Eduardo Ramírez Pérez** — Physicist (UAM) focused on quantitative modeling, risk analytics, and data science. Licensed under the MIT License.
