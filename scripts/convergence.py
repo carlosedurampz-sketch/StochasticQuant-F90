@@ -15,10 +15,15 @@ import sys
 
 import numpy as np
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src"))
+_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, _ROOT)
+sys.path.insert(0, os.path.join(_ROOT, "src"))
 
-from models import simulate_gbm, simulate_vasicek_losses, vasicek_var_analytic  # noqa: E402
+from models import (  # noqa: E402
+    simulate_gbm,
+    simulate_vasicek_losses,
+    vasicek_var_analytic,
+)
 from risk_metrics import expected_shortfall, value_at_risk  # noqa: E402
 
 
@@ -27,7 +32,8 @@ def main() -> None:
     var_limit = vasicek_var_analytic(0.02, 0.15, 0.45, 1.0, 1000, alpha=0.99)
     print(f"Vasicek asymptotic VaR99 (N->inf): {var_limit:.4f}")
     rows = []
-    print(f"{'scenarios':>10} {'VaR99':>8} {'CVaR99':>8} {'EL':>7} {'EL err':>7} {'1/sqrt(N) SE':>12}")
+    print(f"{'scenarios':>10} {'VaR99':>8} {'CVaR99':>8} {'EL':>7} "
+          f"{'EL err':>7} {'1/sqrt(N) SE':>12}")
     for n in [1_000, 5_000, 20_000, 50_000, 100_000, 200_000]:
         losses = simulate_vasicek_losses(n, 1000, pd=0.02, rho=0.15, lgd=0.45, ead=1.0,
                                          seed=42, antithetic=True)
@@ -35,8 +41,10 @@ def main() -> None:
         cvar99 = expected_shortfall(losses, 0.99)
         el, se = losses.mean(), losses.std(ddof=1) / np.sqrt(n)
         rows.append({"n_scenarios": n, "var99": var99, "cvar99": cvar99,
-                     "el": el, "el_se": se, "var99_vs_limit_pct": 100 * (var99 - var_limit) / var_limit})
-        print(f"{n:>10,} {var99:>8.3f} {cvar99:>8.3f} {el:>7.3f} {el - 9.0:>+7.3f} {se:>12.4f}")
+                     "el": el, "el_se": se,
+                     "var99_vs_limit_pct": 100 * (var99 - var_limit) / var_limit})
+        print(f"{n:>10,} {var99:>8.3f} {cvar99:>8.3f} {el:>7.3f} "
+              f"{el - 9.0:>+7.3f} {se:>12.4f}")
     import csv
     with open("results/convergence.csv", "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=list(rows[0]))
@@ -51,7 +59,8 @@ def main() -> None:
         for scheme in ["exact", "euler", "milstein"]:
             paths = simulate_gbm(n_steps=steps, n_paths=20_000, seed=7, scheme=scheme)
             errs[scheme] = paths[:, -1].mean() - theory
-        print(f"{steps:>6} {errs['exact']:>10.3f} {errs['euler']:>10.3f} {errs['milstein']:>12.3f}")
+        print(f"{steps:>6} {errs['exact']:>10.3f} {errs['euler']:>10.3f} "
+              f"{errs['milstein']:>12.3f}")
 
     import matplotlib
     matplotlib.use("Agg")
@@ -60,7 +69,8 @@ def main() -> None:
     ns = [r["n_scenarios"] for r in rows]
     ax.errorbar(ns, [r["var99"] for r in rows], fmt="o-", label="VaR99 (simulated)")
     ax.plot(ns, [r["cvar99"] for r in rows], "s-", label="CVaR99 (simulated)")
-    ax.axhline(var_limit, color="red", linestyle="--", label=f"Vasicek limit {var_limit:.2f}")
+    ax.axhline(var_limit, color="red", linestyle="--",
+               label=f"Vasicek limit {var_limit:.2f}")
     ax.set_xscale("log"); ax.set_xlabel("Scenarios"); ax.set_ylabel("Loss")
     ax.set_title("Convergence: VaR/CVaR vs number of scenarios (1/sqrt(N) error)")
     ax.legend(); ax.grid(True, alpha=0.3)
