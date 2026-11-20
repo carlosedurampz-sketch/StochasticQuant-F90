@@ -161,16 +161,15 @@ Cada verificación siguiente está automatizada (`pytest`, más controles de ase
 
 ## Benchmark
 
-`python -m src.benchmark` mide la simulación terminal de GBM (20k y 100k trayectorias, mediana de 3 repeticiones) para bucles en Python puro, vectorización con NumPy y el núcleo de Fortran (o su respaldo etiquetado). Tiempo de pared mediano, simulación terminal de GBM:
+`python -m src.benchmark` mide la simulación terminal de GBM (20k y 100k trayectorias, mediana de 3 repeticiones) para bucles en Python puro, vectorización con NumPy y el núcleo de Fortran. Medido en GitHub Actions (CI run #5, `ubuntu-latest`, Python 3.11, 20 nov 2026), tiempo de pared mediano:
 
 | Motor | 20,000 trayectorias | 100,000 trayectorias |
 |---|---|---|
-| Python puro | 0.0111 s | 0.0788 s |
-| NumPy | 0.00047 s | 0.0054 s |
-| Fortran (f2py) | [PENDING: compile & measure] | [PENDING: compile & measure] |
-| Respaldo de la API de Fortran (NumPy) | 0.00053 s | 0.0038 s |
+| Python puro | 0.0093 s | 0.0443 s |
+| NumPy | 0.0002 s | 0.0011 s |
+| Fortran (f2py) | 0.0010 s | 0.0048 s |
 
-NumPy es **14.7× más rápido que Python puro** con 100k trayectorias. El respaldo *es* NumPy por debajo, así que coincidir con NumPy es exactamente lo esperado, y la gráfica lo etiqueta con honestidad en lugar de fingir que es Fortran compilado. Para completar la fila de Fortran, ejecuta `make fortran && python -m src.benchmark` en una máquina con `gfortran`; el patrón esperado es que Fortran destaque sobre todo en los núcleos de Vasicek/Merton, intensivos en bucles, mientras que para el núcleo vectorizable de GBM NumPy ya está cerca del límite — esa asimetría es en sí misma la lección. Ver `results/benchmark.csv`.
+NumPy es **40× más rápido que Python puro** con 100k trayectorias. Fortran es **9.2× más rápido que Python puro** pero ~4× más lento que NumPy aquí — y la comparación no es directa: el motor Fortran simula la trayectoria completa de 252 pasos por cada trayectoria, mientras que NumPy y Python puro calculan solo el valor terminal en un paso con la fórmula cerrada. Por paso simulado, Fortran va muy por delante; NumPy gana el atajo del valor terminal porque ya está cerca del límite vectorizado. Esa asimetría es en sí misma la lección: Fortran destaca en los núcleos de Vasicek/Merton, intensivos en bucles, mientras que para el núcleo vectorizable de GBM NumPy ya está cerca del límite. El benchmark corre en CI en cada push (ver `.github/workflows/ci.yml`), así que estos números se re-miden, no son de una sola corrida. Ver `results/benchmark.csv`.
 
 ![Benchmark: Python puro vs NumPy vs Fortran](docs/images/benchmark.png)
 
