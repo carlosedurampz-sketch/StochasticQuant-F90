@@ -77,7 +77,9 @@ def kupiec_test(
     }
 
 
-def normal_var_cvar(alpha: float = 0.99, mu: float = 0.0, sigma: float = 1.0) -> tuple[float, float]:
+def normal_var_cvar(
+    alpha: float = 0.99, mu: float = 0.0, sigma: float = 1.0,
+) -> tuple[float, float]:
     """Analytic VaR / CVaR for a Normal(mu, sigma) loss distribution.
 
     VaR = mu + sigma Phi^{-1}(alpha)
@@ -91,4 +93,5 @@ def normal_var_cvar(alpha: float = 0.99, mu: float = 0.0, sigma: float = 1.0) ->
 
 
 def violation_series(losses: np.ndarray, var: float) -> np.ndarray:
+    """1/0 violation indicator series: 1 where loss exceeds VaR."""
     return (np.asarray(losses) > var).astype(int)
