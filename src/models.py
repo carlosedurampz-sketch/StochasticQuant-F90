@@ -28,6 +28,9 @@ def merton_pd(v0: float, debt: float, mu: float, sigma: float, t: float = 1.0) -
 
 
 def merton_d2(v0: float, debt: float, mu: float, sigma: float, t: float = 1.0) -> float:
+    """Distance-to-default d2 (same formula as :func:`merton_pd`)."""
+    if sigma <= 0 or t <= 0 or v0 <= 0 or debt <= 0:
+        raise ValueError("v0, debt, sigma, t must be positive")
     d2 = (np.log(v0 / debt) + (mu - 0.5 * sigma**2) * t) / (sigma * np.sqrt(t))
     return float(d2)
 
