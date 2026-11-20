@@ -17,8 +17,9 @@ import sys
 
 import numpy as np
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src"))
+_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, _ROOT)
+sys.path.insert(0, os.path.join(_ROOT, "src"))
 
 from risk_metrics import kupiec_test, normal_var_cvar  # noqa: E402
 
@@ -42,9 +43,12 @@ def main() -> None:
     with open("results/backtest.json", "w") as f:
         json.dump(out, f, indent=2)
     print("Saved results/backtest.json")
-    assert not out["normal_well_specified"]["reject_h0_5pct"], "well-specified model rejected?!"
-    assert out["student_t3_misspecified"]["reject_h0_5pct"], "test has no power vs heavy tails?!"
-    print("Backtest assertions passed: Kupiec accepts the good model, rejects the bad one.")
+    assert not out["normal_well_specified"]["reject_h0_5pct"], \
+        "well-specified model rejected?!"
+    assert out["student_t3_misspecified"]["reject_h0_5pct"], \
+        "test has no power vs heavy tails?!"
+    print("Backtest assertions passed: Kupiec accepts the good model, "
+          "rejects the bad one.")
 
 
 if __name__ == "__main__":
