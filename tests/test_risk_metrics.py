@@ -1,12 +1,20 @@
 """Tests for VaR / CVaR / Kupiec against analytic ground truth."""
+import os
+import sys
+
 import numpy as np
 import pytest
 from scipy.stats import norm
 
-import sys, os
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src"))
+_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(_ROOT, "src"))
 
-from risk_metrics import expected_shortfall, kupiec_test, normal_var_cvar, value_at_risk
+from risk_metrics import (  # noqa: E402
+    expected_shortfall,
+    kupiec_test,
+    normal_var_cvar,
+    value_at_risk,
+)
 
 
 def test_var_cvar_on_known_normal():
