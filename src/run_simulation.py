@@ -24,6 +24,7 @@ import sys
 import time
 
 import numpy as np
+from scipy.stats import norm
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -71,8 +72,6 @@ def main() -> None:
     # --- 3. Merton portfolio with the same PD (cross-model check) ----------
     # Choose V0/Debt so the Merton PD matches the Vasicek PD: invert
     # PD = Phi(-d2) with sigma=0.25, mu=0.05, T=1.
-    from scipy.stats import norm
-
     d2_target = -norm.ppf(args.pd)
     # ln(V0/D) = d2*sigma - (mu - sigma^2/2); set Debt=80, solve V0.
     v0 = 80.0 * np.exp(d2_target * 0.25 - (0.05 - 0.5 * 0.25**2))
@@ -89,7 +88,8 @@ def main() -> None:
     )
     var99, cvar99 = value_at_risk(losses, 0.99), expected_shortfall(losses, 0.99)
     var95, cvar95 = value_at_risk(losses, 0.95), expected_shortfall(losses, 0.95)
-    var99_f, cvar99_f = value_at_risk(losses_f, 0.99), expected_shortfall(losses_f, 0.99)
+    var99_f = value_at_risk(losses_f, 0.99)
+    cvar99_f = expected_shortfall(losses_f, 0.99)
     kupiec = kupiec_test(losses, var99, alpha=0.99)
 
     # --- 4. Market dynamics: GBM exact vs Euler vs Milstein, Heston --------
@@ -151,8 +151,9 @@ def main() -> None:
           f"({kupiec['violation_rate']:.4%}), LR={kupiec['lr_stat']:.3f}, "
           f"p={kupiec['p_value']:.3f}, reject H0: {kupiec['reject_h0_5pct']}")
     print(f"GBM terminal mean — exact {gbm_exact[:, -1].mean():.2f}, "
-          f"Euler {gbm_euler[:, -1].mean():.2f}, Milstein {gbm_milstein[:, -1].mean():.2f}, "
-          f"theory {100*np.exp(0.05):.2f}")
+          f"Euler {gbm_euler[:, -1].mean():.2f}, "
+          f"Milstein {gbm_milstein[:, -1].mean():.2f}, "
+          f"theory {100 * np.exp(0.05):.2f}")
     print(f"Heston terminal mean price {heston_price[:, -1].mean():.2f}, "
           f"mean variance {heston_var[:, -1].mean():.4f} (theta=0.04)")
 
@@ -177,7 +178,8 @@ def main() -> None:
         fig, ax = plt.subplots(figsize=(8, 5))
         ax.hist(losses, bins=80, density=True, alpha=0.7, label="Simulated losses")
         ax.axvline(var99, color="red", label=f"VaR99 = {var99:.2f}")
-        ax.axvline(cvar99, color="darkred", linestyle="--", label=f"CVaR99 = {cvar99:.2f}")
+        ax.axvline(cvar99, color="darkred", linestyle="--",
+                   label=f"CVaR99 = {cvar99:.2f}")
         ax.axvline(el_theory, color="green", label=f"EL = {el_theory:.2f}")
         ax.set_xlabel("Portfolio loss")
         ax.set_ylabel("Density")
