@@ -1,5 +1,5 @@
 !===============================================================================
-! StochasticQuant-F90 — montecarlo.f90
+! StochasticQuant-F90 - montecarlo.f90
 ! Fortran 90 numerical core for portfolio tail-risk Monte Carlo.
 !
 ! What it does
@@ -398,7 +398,7 @@ contains
     deallocate(s)
   end subroutine portfolio_var_cvar
 
-  ! Quicksort (median-of-three pivot, recursive) — O(n log n), so
+  ! Quicksort (median-of-three pivot, recursive) - O(n log n), so
   ! portfolio_var_cvar stays fast at 200k+ scenarios.
   recursive subroutine quicksort(a, lo, hi)
     double precision, intent(inout) :: a(:)
