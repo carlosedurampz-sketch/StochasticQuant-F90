@@ -15,27 +15,35 @@ Run:  python -m src.benchmark [--n-paths 20000 100000] [--repeats 3]
 from __future__ import annotations
 
 import argparse
+import csv
 import math
 import os
 import random
 import resource
 import sys
 import time
-import tracemalloc
+from collections.abc import Callable
 
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from fortran_backend import BACKEND, FORTRAN_AVAILABLE, simulate_gbm_fortran  # noqa: E402
+from fortran_backend import (  # noqa: E402
+    BACKEND,
+    FORTRAN_AVAILABLE,
+    simulate_gbm_fortran,
+)
 
 
 def _rss_mb() -> float:
     return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024.0
 
 
-def pure_python_gbm(n_paths, s0=100.0, mu=0.05, sigma=0.20, t=1.0, seed=42):
+def pure_python_gbm(
+    n_paths: int, s0: float = 100.0, mu: float = 0.05, sigma: float = 0.20,
+    t: float = 1.0, seed: int = 42,
+) -> list[float]:
     """Deliberately naive loop version — the baseline a quant should beat."""
     rng = random.Random(seed)
     drift = (mu - 0.5 * sigma**2) * t
@@ -47,13 +55,16 @@ def pure_python_gbm(n_paths, s0=100.0, mu=0.05, sigma=0.20, t=1.0, seed=42):
     return out
 
 
-def numpy_gbm(n_paths, s0=100.0, mu=0.05, sigma=0.20, t=1.0, seed=42):
+def numpy_gbm(
+    n_paths: int, s0: float = 100.0, mu: float = 0.05, sigma: float = 0.20,
+    t: float = 1.0, seed: int = 42,
+) -> np.ndarray:
     rng = np.random.default_rng(seed)
     z = rng.standard_normal(n_paths)
     return s0 * np.exp((mu - 0.5 * sigma**2) * t + sigma * np.sqrt(t) * z)
 
 
-def _timeit(fn, repeats=3):
+def _timeit(fn: Callable[[], object], repeats: int = 3) -> float:
     times = []
     for _ in range(repeats):
         start = time.perf_counter()
@@ -62,7 +73,9 @@ def _timeit(fn, repeats=3):
     return float(np.median(times))
 
 
-def benchmark(n_paths_list=(20_000, 100_000), repeats=3) -> list[dict]:
+def benchmark(
+    n_paths_list: tuple[int, ...] = (20_000, 100_000), repeats: int = 3,
+) -> list[dict]:
     rows: list[dict] = []
     for n in n_paths_list:
         # Pure Python
@@ -87,7 +100,7 @@ def benchmark(n_paths_list=(20_000, 100_000), repeats=3) -> list[dict]:
     return rows
 
 
-def plot(rows, out_png: str) -> None:
+def plot(rows: list[dict], out_png: str) -> None:
     import matplotlib
 
     matplotlib.use("Agg")
@@ -96,7 +109,9 @@ def plot(rows, out_png: str) -> None:
     engines = sorted({r["engine"] for r in rows})
     fig, ax = plt.subplots(figsize=(8, 5))
     for eng in engines:
-        pts = sorted([r for r in rows if r["engine"] == eng], key=lambda r: r["n_paths"])
+        pts = sorted(
+            [r for r in rows if r["engine"] == eng], key=lambda r: r["n_paths"]
+        )
         ax.plot([r["n_paths"] for r in pts], [r["time_s"] for r in pts],
                 marker="o", label=eng)
     ax.set_xscale("log")
@@ -123,8 +138,6 @@ def main() -> None:
     rows = benchmark(args.n_paths, args.repeats)
     print(f"Peak RSS after:  {_rss_mb():.1f} MB")
     os.makedirs(args.out_dir, exist_ok=True)
-    import csv
-
     csv_path = os.path.join(args.out_dir, "benchmark.csv")
     with open(csv_path, "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=["engine", "n_paths", "time_s", "paths_per_s"])
