@@ -1,12 +1,15 @@
 """Tests for Merton / Vasicek / GBM / Heston and Cholesky."""
+import os
+import sys
+
 import numpy as np
 import pytest
 
-import sys, os
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src"))
+_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(_ROOT, "src"))
 
-from fortran_backend import cholesky
-from models import (
+from fortran_backend import cholesky  # noqa: E402
+from models import (  # noqa: E402
     gbm_terminal_mean,
     merton_pd,
     simulate_gbm,
@@ -16,6 +19,7 @@ from models import (
     vasicek_expected_loss,
     vasicek_var_analytic,
 )
+from risk_metrics import value_at_risk  # noqa: E402
 
 
 def test_cholesky_reconstructs_correlation():
@@ -60,7 +64,6 @@ def test_vasicek_expected_loss_identity():
 def test_vasicek_var_converges_to_analytic_limit():
     losses = simulate_vasicek_losses(100_000, 1000, pd=0.02, rho=0.15,
                                      lgd=0.45, ead=1.0, seed=42)
-    from risk_metrics import value_at_risk
     limit = vasicek_var_analytic(0.02, 0.15, 0.45, 1.0, 1000, alpha=0.99)
     assert value_at_risk(losses, 0.99) == pytest.approx(limit, rel=0.10)
 
